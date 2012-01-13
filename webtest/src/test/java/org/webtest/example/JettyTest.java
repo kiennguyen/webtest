@@ -23,9 +23,13 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.ResourceHandler;
+import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.resource.Resource;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 import junit.framework.TestCase;
 
@@ -36,11 +40,13 @@ import junit.framework.TestCase;
 public class JettyTest extends TestCase
 {
    private static final int TEST_PORT = 9876;
+
    private static final String RESOURCES_PATH = "/jettypages";
+
    private static final String SERVER_URL = "http://localhost:" + TEST_PORT;
-   
-   private Server server;   
-   
+
+   private Server server;
+
    @Override
    public void setUp() throws Exception
    {
@@ -53,25 +59,46 @@ public class JettyTest extends TestCase
    {
       server.stop();
    }
-   
+
    private Server createServer(int port) throws Exception
    {
       Server jetty = new Server(port);
-      
+
       //Attach static resources for server
       ResourceHandler resources = new ResourceHandler();
       URL url = JettyTest.class.getResource(RESOURCES_PATH);
       resources.setBaseResource(Resource.newResource(url));
       jetty.addHandler(resources);
-      
+
+      Context context = new Context(jetty, "/", Context.SESSIONS);
+      context.addEventListener(new EchoServletContextLister());
+
+      Map<String, String> initParams = new HashMap<String, String>();
+      initParams.put("test-params", "Hello Test Params");
+      context.setInitParams(initParams);
+
+      ServletHolder echoHolder = new ServletHolder(EchoServlet.class);
+      context.addServlet(echoHolder, "/echo");
+
       return jetty;
    }
-   
-   public void testIndexHtmlPage() throws Exception {
+
+   public void testIndexHtmlPage() throws Exception
+   {
       final WebClient webClient = new WebClient();
       final HtmlPage page = webClient.getPage(SERVER_URL);
       assertEquals("Jetty Test", page.getTitleText());
 
       webClient.closeAllWindows();
-  }
+   }
+
+   public void testEchoServlet() throws Exception
+   {
+      final WebClient webClient = new WebClient();
+      final HtmlPage page = webClient.getPage(SERVER_URL + "/echo");
+      assertEquals("Echo Test", page.getTitleText());
+      assertEquals(true, page.getBody().asText().contains("Hello Echo Test"));
+
+      webClient.closeAllWindows();
+   }
 }
