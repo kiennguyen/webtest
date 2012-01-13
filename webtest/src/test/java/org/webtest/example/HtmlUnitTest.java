@@ -18,13 +18,19 @@
  */
 package org.webtest.example;
 
+import com.gargoylesoftware.htmlunit.BrowserVersion;
+
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
+
+import com.gargoylesoftware.htmlunit.WebClient;
+
 import junit.framework.TestCase;
 
 /**
  * @author <a href="kienna@exoplatform.com">Kien Nguyen</a>
  * @version $Revision$
  */
-public class WebTest extends TestCase
+public class HtmlUnitTest extends TestCase
 {
    @Override
    public void setUp() throws Exception
@@ -38,8 +44,26 @@ public class WebTest extends TestCase
 
    }
 
-   public void testHello()
+   public void testHomePage() throws Exception
    {
-      assertEquals("hello", "hello");
+      final WebClient webClient = new WebClient();
+      final HtmlPage page = webClient.getPage("http://htmlunit.sourceforge.net");
+      assertEquals("Welcome to HtmlUnit", page.getTitleText());
+
+      final String pageAsXml = page.asXml();
+      assertTrue(pageAsXml.contains("<body class=\"composite\">"));
+
+      final String pageAsText = page.asText();
+      assertTrue(pageAsText.contains("Support for the HTTP and HTTPS protocols"));
+
+      webClient.closeAllWindows();
+   }
+   
+   public void testHomePage_Firefox() throws Exception {
+       final WebClient webClient = new WebClient(BrowserVersion.FIREFOX_3_6);
+       final HtmlPage page = webClient.getPage("http://htmlunit.sourceforge.net");
+       assertEquals("Welcome to HtmlUnit", page.getTitleText());
+
+       webClient.closeAllWindows();
    }
 }
